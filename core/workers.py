@@ -36,9 +36,9 @@ class CaptureWorker(QThread):
             return
 
         # Save the captured packets
-        wrpcap(self.output_file, packets)
+        wrpcap(self.output_file, packets, append=True)
         
-        self.progress.emit(f"Capture complete! {len(packets)} packets saved to '{self.output_file}'.")
+        self.progress.emit(f"Capture complete! {len(packets)} packets have been ADDED to '{self.output_file}'.")
         self.finished.emit(self.output_file)
 
     def stop(self):

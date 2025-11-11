@@ -1,3 +1,31 @@
+/* --- NEW: Custom Title Bar Styling --- */
+#title_bar {
+    background-color: #1e1e2e; /* Same as sidebar for a unified look */
+    height: 30px;
+}
+
+#title_bar QLabel {
+    color: #dcdcdc;
+    font-size: 14px;
+    padding-left: 5px;
+}
+
+#title_bar QPushButton {
+    background-color: transparent;
+    border: none;
+    width: 30px;
+    height: 30px;
+    padding: 5px;
+}
+#title_bar QPushButton:hover {
+    background-color: #3a3b4f;
+}
+
+/* Special color for close button on hover */
+#close_button:hover {
+    background-color: #e74c3c;
+}
+
 /* Main Window: Made background darker */
 QMainWindow, QWidget {
     background-color: #161625; /* Darker purple/blue */
