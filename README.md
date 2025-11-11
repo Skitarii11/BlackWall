@@ -104,3 +104,22 @@ By first learning what your "normal" network traffic looks like, it can identify
 6.  Analyze historical trends on the **Visualization** page and review all past events in the **Logs** tab.
 
 ## Project Structure
+blackwall/
+├── core/ # Backend logic (sniffer, ML, DB)
+├── ui/ # Frontend GUI code
+├── models/ # Pre-trained ML models
+├── assets/ # Icons and other static files
+├── main.py # Application entry point
+├── requirements.txt # Project dependencies
+├── style.qss # Qt Style Sheet for the UI
+└── README.md # This file
+code
+Code
+## License
+
+This project is licensed under the MIT License.
+
+## Authors
+
+-   **JAVKHLAN** (CS22D130)
+-   **SANCHIR** (CS22D183
