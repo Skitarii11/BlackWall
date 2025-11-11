@@ -6,6 +6,9 @@
 A modern, desktop-based Intrusion Detection System (IDS) that leverages Machine Learning to detect anomalous network behavior in real-time, including zero-day threats.
 
 ![Blackwall Dashboard Screenshot](assets/dashboard_screenshot.png)
+![Blackwall logs Screenshot](assets/logs_screenshot.png)
+![Blackwall viisualization Screenshot](assets/graph_screenshot.png)
+![Blackwall train model Screenshot](assets/model_screenshot.png)
 *(You should take a screenshot of your final application and save it as `dashboard_screenshot.png` inside the `assets` folder for this image to appear)*
 
 ---
