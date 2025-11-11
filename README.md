@@ -1,7 +1,6 @@
 # Blackwall IDS
 
 ![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 A modern, desktop-based Intrusion Detection System (IDS) that leverages Machine Learning to detect anomalous network behavior in real-time, including zero-day threats.
 
@@ -9,7 +8,6 @@ A modern, desktop-based Intrusion Detection System (IDS) that leverages Machine 
 ![Blackwall logs Screenshot](assets/logs_screenshot.png)
 ![Blackwall viisualization Screenshot](assets/graph_screenshot.png)
 ![Blackwall train model Screenshot](assets/model_screenshot.png)
-*(You should take a screenshot of your final application and save it as `dashboard_screenshot.png` inside the `assets` folder for this image to appear)*
 
 ---
 
@@ -63,7 +61,7 @@ By first learning what your "normal" network traffic looks like, it can identify
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/blackwall.git
+    git clone https://github.com/Skitarii11/BlackWall.git
     cd blackwall
     ```
 
@@ -105,24 +103,3 @@ By first learning what your "normal" network traffic looks like, it can identify
 4.  View the **Dashboard** for a high-level summary.
 5.  Go to the **Live Alerts** page to see suspicious activity detected in real-time.
 6.  Analyze historical trends on the **Visualization** page and review all past events in the **Logs** tab.
-
-## Project Structure
-blackwall/
-├── core/ # Backend logic (sniffer, ML, DB)
-├── ui/ # Frontend GUI code
-├── models/ # Pre-trained ML models
-├── assets/ # Icons and other static files
-├── main.py # Application entry point
-├── requirements.txt # Project dependencies
-├── style.qss # Qt Style Sheet for the UI
-└── README.md # This file
-code
-Code
-## License
-
-This project is licensed under the MIT License.
-
-## Authors
-
--   **JAVKHLAN** (CS22D130)
--   **SANCHIR** (CS22D183
