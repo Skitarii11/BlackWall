@@ -1,14 +1,20 @@
-/* Main Window and General Styling */
+/* Main Window: Made background darker */
 QMainWindow, QWidget {
-    background-color: #1e1e2e; /* Dark background */
-    color: #dcdcdc; /* Light gray text */
+    background-color: #161625; /* Darker purple/blue */
+    color: #dcdcdc;
     font-family: "Segoe UI", Arial, sans-serif;
 }
 
 /* Sidebar Styling */
 #sidebar {
-    background-color: #27293d; /* Slightly lighter dark color for sidebar */
-    border-right: 1px solid #3a3b4f;
+    background-color: #161625; /* Original darker color is now the sidebar color */
+    border-right: 1px solid #27293d;
+}
+
+/* Sidebar Title */
+#sidebar_title {
+    padding-left: 10px;
+    color: #ffffff;
 }
 
 /* Sidebar Buttons */
@@ -21,18 +27,16 @@ QMainWindow, QWidget {
     font-size: 14px;
     border-radius: 5px;
 }
-
 #sidebar QPushButton:hover {
-    background-color: #3a3b4f; /* Highlight on hover */
+    background-color: #27293d;
 }
-
 #sidebar QPushButton:checked {
     background-color: #e74c3c; /* Red for selected/active button */
     color: #ffffff;
     font-weight: bold;
 }
 
-/* Main Action Buttons (Start/Stop/Clear) */
+/* Main Action Buttons */
 QPushButton {
     background-color: #27293d;
     border: 1px solid #3a3b4f;
@@ -40,12 +44,11 @@ QPushButton {
     font-size: 14px;
     border-radius: 5px;
 }
-
 QPushButton:hover {
     background-color: #3a3b4f;
 }
 
-/* Special button for 'Clear Logs' */
+/* NEW: Style for the Clear Logs button */
 #clear_logs_button {
     background-color: #e74c3c;
     color: #ffffff;
@@ -55,44 +58,47 @@ QPushButton:hover {
     background-color: #c0392b; /* Darker red on hover */
 }
 
-/* Labels and Headings */
-QLabel {
-    font-size: 14px;
-}
-
+/* Headings */
 QLabel#heading {
     font-size: 28px;
     font-weight: bold;
     color: #ffffff;
-    padding: 10px;
+    padding-bottom: 10px;
+}
+
+/* Dashboard Statistics Labels */
+QLabel#stat_label {
+    font-size: 16px;
+    color: #dcdcdc;
+}
+QLabel#stat_value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #ffffff;
 }
 
 /* Table Styling */
 QTableWidget {
-    background-color: #27293d;
-    border: none;
-    gridline-color: #3a3b4f;
+    background-color: #1e1e2e;
+    border: 1px solid #27293d;
+    gridline-color: #27293d;
 }
 QHeaderView::section {
-    background-color: #1e1e2e;
+    background-color: #161625;
     color: #dcdcdc;
     padding: 8px;
-    border: 1px solid #3a3b4f;
+    border: 1px solid #27293d;
     font-size: 14px;
     font-weight: bold;
 }
 QTableWidget::item {
-    padding: 8px;
+    padding: 10px;
+    border-bottom: 1px solid #27293d;
+}
+/* NEW: Alternating row colors for better readability */
+QTableWidget::item:alternate {
+    background-color: #27293d;
 }
 QTableWidget::item:selected {
     background-color: #3a3b4f;
-}
-
-/* Search Bar Styling */
-QLineEdit {
-    background-color: #27293d;
-    border: 1px solid #3a3b4f;
-    padding: 8px;
-    font-size: 14px;
-    border-radius: 5px;
 }
