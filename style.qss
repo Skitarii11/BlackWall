@@ -1,0 +1,98 @@
+/* Main Window and General Styling */
+QMainWindow, QWidget {
+    background-color: #1e1e2e; /* Dark background */
+    color: #dcdcdc; /* Light gray text */
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+/* Sidebar Styling */
+#sidebar {
+    background-color: #27293d; /* Slightly lighter dark color for sidebar */
+    border-right: 1px solid #3a3b4f;
+}
+
+/* Sidebar Buttons */
+#sidebar QPushButton {
+    background-color: transparent;
+    border: none;
+    color: #dcdcdc;
+    padding: 12px;
+    text-align: left;
+    font-size: 14px;
+    border-radius: 5px;
+}
+
+#sidebar QPushButton:hover {
+    background-color: #3a3b4f; /* Highlight on hover */
+}
+
+#sidebar QPushButton:checked {
+    background-color: #e74c3c; /* Red for selected/active button */
+    color: #ffffff;
+    font-weight: bold;
+}
+
+/* Main Action Buttons (Start/Stop/Clear) */
+QPushButton {
+    background-color: #27293d;
+    border: 1px solid #3a3b4f;
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 5px;
+}
+
+QPushButton:hover {
+    background-color: #3a3b4f;
+}
+
+/* Special button for 'Clear Logs' */
+#clear_logs_button {
+    background-color: #e74c3c;
+    color: #ffffff;
+    font-weight: bold;
+}
+#clear_logs_button:hover {
+    background-color: #c0392b; /* Darker red on hover */
+}
+
+/* Labels and Headings */
+QLabel {
+    font-size: 14px;
+}
+
+QLabel#heading {
+    font-size: 28px;
+    font-weight: bold;
+    color: #ffffff;
+    padding: 10px;
+}
+
+/* Table Styling */
+QTableWidget {
+    background-color: #27293d;
+    border: none;
+    gridline-color: #3a3b4f;
+}
+QHeaderView::section {
+    background-color: #1e1e2e;
+    color: #dcdcdc;
+    padding: 8px;
+    border: 1px solid #3a3b4f;
+    font-size: 14px;
+    font-weight: bold;
+}
+QTableWidget::item {
+    padding: 8px;
+}
+QTableWidget::item:selected {
+    background-color: #3a3b4f;
+}
+
+/* Search Bar Styling */
+QLineEdit {
+    background-color: #27293d;
+    border: 1px solid #3a3b4f;
+    padding: 8px;
+    font-size: 14px;
+    border-radius: 5px;
+}

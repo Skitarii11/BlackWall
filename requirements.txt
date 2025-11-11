@@ -1,0 +1,9 @@
+pyqt5
+scapy
+scikit-learn
+tensorflow
+matplotlib
+pandas
+numpy
+joblib
+qtawesome
