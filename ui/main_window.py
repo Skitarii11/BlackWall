@@ -82,7 +82,7 @@ class MainWindow(QMainWindow):
         sidebar_layout = QVBoxLayout(sidebar_widget)
         sidebar_widget.setFixedWidth(220)
         title = QLabel("BLACKWALL")
-        title.setFont(QFont("Segoe UI", 16, QFont.Bold))
+        title.setFont(QFont("Segoe UI", 14, QFont.Bold))
         title.setObjectName("sidebar_title")
         self.dashboard_btn = self.create_sidebar_button(" Dashboard", 'fa5s.tachometer-alt')
         self.live_alerts_btn = self.create_sidebar_button(" Live Alerts", 'fa5s.bell')
