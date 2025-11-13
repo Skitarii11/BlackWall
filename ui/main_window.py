@@ -258,6 +258,7 @@ class MainWindow(QMainWindow):
         self.alerts_table.setColumnCount(5)
         self.alerts_table.setHorizontalHeaderLabels(["Time", "Source IP", "Destination IP", "Protocol", "Prediction"])
         self.alerts_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.alerts_table.verticalHeader().setVisible(False)
         layout.addWidget(heading)
         layout.addWidget(self.alerts_table)
 

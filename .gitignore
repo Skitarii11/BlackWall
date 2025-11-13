@@ -19,8 +19,9 @@ __pycache__/
 
 # --- Project-Specific Generated Data ---
 # These files are created by the user when running the application.
-*.db
-*.pcap
+blackwall_logs.db
+normal_traffic.pcap
+anomaly_detector.joblib
 
 
 # --- IDE and Editor Folders ---
