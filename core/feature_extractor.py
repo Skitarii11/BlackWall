@@ -1,10 +1,6 @@
 from scapy.all import IP, TCP, UDP
 
 def extract_features(packet):
-    """
-    Extracts numerical features from a packet for the ML model
-    and descriptive features for logging.
-    """
     log_features = {}
     numerical_features = {}
 
@@ -26,7 +22,7 @@ def extract_features(packet):
         log_features['src_port'] = 0
         log_features['dst_port'] = 0
     
-    # --- Features for the ML model (must be numerical) ---
+    # --- Features for the ML model ---
     numerical_features['protocol'] = packet[IP].proto
     numerical_features['pkt_len'] = len(packet)
     numerical_features['src_port'] = log_features['src_port']

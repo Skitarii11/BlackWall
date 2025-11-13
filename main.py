@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import QApplication, QMessageBox
 from ui.main_window import MainWindow
 
 def check_privileges():
-    # ... (this function remains the same)
     try:
         is_admin = (os.getuid() == 0)
     except AttributeError:
@@ -15,14 +14,12 @@ def check_privileges():
 if __name__ == '__main__':
     app = QApplication(sys.argv)
 
-    # --- LOAD THE STYLESHEET ---
     try:
         with open('style.qss', 'r') as f:
             stylesheet = f.read()
         app.setStyleSheet(stylesheet)
     except FileNotFoundError:
         print("Warning: style.qss not found. Using default styles.")
-    # --- END OF STYLESHEET LOADING ---
 
     if not check_privileges():
         QMessageBox.critical(

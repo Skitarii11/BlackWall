@@ -1,4 +1,4 @@
-/* --- NEW: Custom Title Bar Styling --- */
+/* --- Custom Title Bar Styling --- */
 #title_bar {
     background-color: #1e1e2e; /* Same as sidebar for a unified look */
     height: 30px;

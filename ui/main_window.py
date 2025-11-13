@@ -4,7 +4,7 @@ import numpy as np
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                              QLabel, QTableWidget, QTableWidgetItem, QStackedWidget,
                              QTextEdit, QHeaderView, QButtonGroup, QMessageBox)
-from PyQt5.QtCore import pyqtSlot, QSize, Qt, QPoint # <-- Import QPoint
+from PyQt5.QtCore import pyqtSlot, QSize, Qt, QPoint
 from PyQt5.QtGui import QColor, QFont, QPen, QIcon
 
 import qtawesome as qta
@@ -22,22 +22,20 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         
-        # --- CHANGE 1: Go Frameless ---
         self.setWindowFlags(Qt.FramelessWindowHint)
-        self.setAttribute(Qt.WA_TranslucentBackground) # For rounded corners later if desired
-        # --- End of Change 1 ---
+        self.setAttribute(Qt.WA_TranslucentBackground)
 
         self.setWindowIcon(QIcon('assets/icon.png'))
         self.setWindowTitle("Blackwall IDS")
         self.setGeometry(100, 100, 1400, 900)
         
-        # Backend components...
+        # Backend components
         self.sniffer_thread = SnifferThread()
         self.detection_engine = DetectionEngine('models/anomaly_detector.joblib')
         self.db_manager = DBManager()
         self.sniffer_thread.packet_captured.connect(self.process_packet)
         
-        # Data and timers...
+        # Data and timers
         self.protocol_counter = Counter()
         self.viz_update_timer = QTimer()
         self.viz_update_timer.setInterval(1000)
@@ -50,14 +48,13 @@ class MainWindow(QMainWindow):
         self.init_ui()
         self.update_charts()
 
-        # --- CHANGE 2: Variable for dragging the window ---
         self._drag_pos = QPoint()
 
     def init_ui(self):
         # Create a central container widget with a black border
         self.container = QWidget()
         self.container.setObjectName("container")
-        self.container.setStyleSheet("#container { background-color: #161625; border: 1px solid #000000; }") # Black border
+        self.container.setStyleSheet("#container { background-color: #161625; border: 1px solid #000000; }")
         self.setCentralWidget(self.container)
 
         # Main layout for the container
@@ -65,18 +62,15 @@ class MainWindow(QMainWindow):
         container_layout.setContentsMargins(0, 0, 0, 0)
         container_layout.setSpacing(0)
 
-        # --- CHANGE 3: Create and add the custom title bar ---
         title_bar = self.create_title_bar()
         container_layout.addWidget(title_bar)
-        # --- End of Change 3 ---
 
-        # The rest of the layout is now inside another widget
         content_widget = QWidget()
         main_layout = QHBoxLayout(content_widget)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         
-        # Sidebar... (no changes here)
+        # Sidebar
         sidebar_widget = QWidget()
         sidebar_widget.setObjectName("sidebar")
         sidebar_layout = QVBoxLayout(sidebar_widget)
@@ -111,7 +105,7 @@ class MainWindow(QMainWindow):
         sidebar_layout.addWidget(self.stop_button)
         sidebar_layout.addWidget(self.clear_logs_button)
         
-        # Main content area... (no changes here)
+        # Main content area
         self.main_content = QStackedWidget()
         self.dashboard_page = QWidget()
         self.live_alerts_page = QWidget()
@@ -133,10 +127,9 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(sidebar_widget)
         main_layout.addWidget(self.main_content)
 
-        # Add the main content widget to the container layout
         container_layout.addWidget(content_widget)
 
-        # Button connections... (no changes here)
+        # Button connections
         self.dashboard_btn.clicked.connect(lambda: self.main_content.setCurrentIndex(0))
         self.live_alerts_btn.clicked.connect(lambda: self.main_content.setCurrentIndex(1))
         self.logs_btn.clicked.connect(lambda: self.main_content.setCurrentIndex(2))
@@ -147,7 +140,6 @@ class MainWindow(QMainWindow):
         self.clear_logs_button.clicked.connect(self.clear_logs)
         self.status_icon_label.setPixmap(qta.icon('fa5s.times-circle', color='#e74c3c').pixmap(QSize(24, 24)))
 
-    # --- CHANGE 4: New method to create the title bar ---
     def create_title_bar(self):
         title_bar = QWidget()
         title_bar.setObjectName("title_bar")
@@ -167,7 +159,7 @@ class MainWindow(QMainWindow):
         minimize_button = QPushButton(qta.icon('fa5s.window-minimize', color='white'), "")
         maximize_button = QPushButton(qta.icon('fa5s.window-maximize', color='white'), "")
         close_button = QPushButton(qta.icon('fa5s.times', color='white'), "")
-        close_button.setObjectName("close_button") # For special hover style
+        close_button.setObjectName("close_button")
 
         minimize_button.clicked.connect(self.showMinimized)
         maximize_button.clicked.connect(self.toggle_maximize)
@@ -185,7 +177,6 @@ class MainWindow(QMainWindow):
         else:
             self.showMaximized()
 
-    # --- CHANGE 5: New methods to handle window dragging ---
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self._drag_pos = event.globalPos() - self.pos()
@@ -195,9 +186,7 @@ class MainWindow(QMainWindow):
         if event.buttons() == Qt.LeftButton:
             self.move(event.globalPos() - self._drag_pos)
             event.accept()
-    # --- End of Change 5 ---
 
-    # ... The rest of your code (create_sidebar_button, all setup_..._page methods, etc.) remains exactly the same.
     def create_sidebar_button(self, text, icon_name):
         button = QPushButton(text)
         button.setIcon(qta.icon(icon_name, color='#dcdcdc'))

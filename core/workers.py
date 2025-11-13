@@ -4,14 +4,9 @@ from scapy.all import sniff, wrpcap, rdpcap
 from sklearn.ensemble import IsolationForest
 from PyQt5.QtCore import QThread, pyqtSignal
 
-# Import the feature extractor from our project
 from core.feature_extractor import extract_features
 
 class CaptureWorker(QThread):
-    """
-    Worker thread to capture network traffic and save it to a pcap file.
-    """
-    # Signals: finished with file path, progress update (string)
     finished = pyqtSignal(str)
     progress = pyqtSignal(str)
     
@@ -32,7 +27,7 @@ class CaptureWorker(QThread):
         
         if not self.running:
             self.progress.emit("Capture cancelled by user.")
-            self.finished.emit("") # Emit empty string on cancellation
+            self.finished.emit("")
             return
 
         # Save the captured packets
@@ -46,9 +41,6 @@ class CaptureWorker(QThread):
 
 
 class TrainerWorker(QThread):
-    """
-    Worker thread to train the ML model from a pcap file.
-    """
     finished = pyqtSignal(str)
     progress = pyqtSignal(str)
     

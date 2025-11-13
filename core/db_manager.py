@@ -32,7 +32,6 @@ class DBManager:
         ''', (
             timestamp,
             alert_type,
-            # ... (rest of the values)
             alert_data.get('src_ip', 'N/A'),
             alert_data.get('dst_ip', 'N/A'),
             alert_data.get('src_port', 0),
@@ -50,10 +49,8 @@ class DBManager:
         return self.cursor.fetchall()
     
     def clear_all_logs(self):
-        """Deletes all records from the alerts table."""
         try:
             self.cursor.execute("DELETE FROM alerts")
-            # Optional: Reset the autoincrement counter
             self.cursor.execute("DELETE FROM sqlite_sequence WHERE name='alerts'")
             self.conn.commit()
             return True
