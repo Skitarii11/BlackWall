@@ -1,0 +1,132 @@
+/* --- Custom Title Bar Styling --- */
+#title_bar {
+    background-color: #1e1e2e; /* Same as sidebar for a unified look */
+    height: 30px;
+}
+
+#title_bar QLabel {
+    color: #dcdcdc;
+    font-size: 14px;
+    padding-left: 5px;
+}
+
+#title_bar QPushButton {
+    background-color: transparent;
+    border: none;
+    width: 30px;
+    height: 30px;
+    padding: 5px;
+}
+#title_bar QPushButton:hover {
+    background-color: #3a3b4f;
+}
+
+/* Special color for close button on hover */
+#close_button:hover {
+    background-color: #e74c3c;
+}
+
+/* Main Window: Made background darker */
+QMainWindow, QWidget {
+    background-color: #161625; /* Darker purple/blue */
+    color: #dcdcdc;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+/* Sidebar Styling */
+#sidebar {
+    background-color: #161625; /* Original darker color is now the sidebar color */
+    border-right: 1px solid #27293d;
+}
+
+/* Sidebar Title */
+#sidebar_title {
+    padding-left: 10px;
+    color: #ffffff;
+}
+
+/* Sidebar Buttons */
+#sidebar QPushButton {
+    background-color: transparent;
+    border: none;
+    color: #dcdcdc;
+    padding: 12px;
+    text-align: left;
+    font-size: 14px;
+    border-radius: 5px;
+}
+#sidebar QPushButton:hover {
+    background-color: #27293d;
+}
+#sidebar QPushButton:checked {
+    background-color: #e74c3c; /* Red for selected/active button */
+    color: #ffffff;
+    font-weight: bold;
+}
+
+/* Main Action Buttons */
+QPushButton {
+    background-color: #27293d;
+    border: 1px solid #3a3b4f;
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 5px;
+}
+QPushButton:hover {
+    background-color: #3a3b4f;
+}
+
+/* NEW: Style for the Clear Logs button */
+#clear_logs_button {
+    background-color: #e74c3c;
+    color: #ffffff;
+    font-weight: bold;
+}
+#clear_logs_button:hover {
+    background-color: #c0392b; /* Darker red on hover */
+}
+
+/* Headings */
+QLabel#heading {
+    font-size: 28px;
+    font-weight: bold;
+    color: #ffffff;
+    padding-bottom: 10px;
+}
+
+/* Dashboard Statistics Labels */
+QLabel#stat_label {
+    font-size: 16px;
+    color: #dcdcdc;
+}
+QLabel#stat_value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+/* Table Styling */
+QTableWidget {
+    background-color: #1e1e2e;
+    border: 1px solid #27293d;
+    gridline-color: #27293d;
+}
+QHeaderView::section {
+    background-color: #161625;
+    color: #dcdcdc;
+    padding: 8px;
+    border: 1px solid #27293d;
+    font-size: 14px;
+    font-weight: bold;
+}
+QTableWidget::item {
+    padding: 10px;
+    border-bottom: 1px solid #27293d;
+}
+/* NEW: Alternating row colors for better readability */
+QTableWidget::item:alternate {
+    background-color: #27293d;
+}
+QTableWidget::item:selected {
+    background-color: #3a3b4f;
+}
