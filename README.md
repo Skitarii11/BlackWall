@@ -7,6 +7,7 @@ A modern, desktop-based Intrusion Detection System (IDS) that leverages Machine 
 ![Blackwall Dashboard Screenshot](assets/dashboard_screenshot.png)
 ![Blackwall logs Screenshot](assets/logs_screenshot.png)
 ![Blackwall viisualization Screenshot](assets/graph_screenshot.png)
+![Blackwall geo Screenshot](assets/geo_screenshot.png)
 ![Blackwall train model Screenshot](assets/model_screenshot.png)
 
 ---
