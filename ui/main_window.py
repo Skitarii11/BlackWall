@@ -4,9 +4,11 @@ import numpy as np
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                              QLabel, QTableWidget, QTableWidgetItem, QStackedWidget,
                              QTextEdit, QHeaderView, QButtonGroup, QMessageBox)
-from PyQt5.QtCore import pyqtSlot, QSize, Qt, QPoint
+from PyQt5.QtCore import pyqtSlot, QSize, Qt, QPoint, QUrl
 from PyQt5.QtGui import QColor, QFont, QPen, QIcon
+from PyQt5.QtWebEngineWidgets import QWebEngineView
 
+import folium
 import qtawesome as qta
 from collections import Counter
 from PyQt5.QtCore import QTimer
@@ -16,6 +18,7 @@ from core.feature_extractor import extract_features
 from core.detection_engine import DetectionEngine
 from core.db_manager import DBManager
 from core.workers import CaptureWorker, TrainerWorker
+from core.geoip_manager import GeoIPManager
 
 
 class MainWindow(QMainWindow):
@@ -33,6 +36,7 @@ class MainWindow(QMainWindow):
         self.sniffer_thread = SnifferThread()
         self.detection_engine = DetectionEngine('models/anomaly_detector.joblib')
         self.db_manager = DBManager()
+        self.geoip_manager = GeoIPManager()
         self.sniffer_thread.packet_captured.connect(self.process_packet)
         
         # Data and timers
@@ -44,6 +48,7 @@ class MainWindow(QMainWindow):
         self.packet_count = 0
         self.attack_count = 0
         self.dashboard_traffic_data = []
+        self.attack_locations = []
 
         self.init_ui()
         self.update_charts()
@@ -80,13 +85,14 @@ class MainWindow(QMainWindow):
         title.setObjectName("sidebar_title")
         self.dashboard_btn = self.create_sidebar_button(" Dashboard", 'fa5s.tachometer-alt')
         self.live_alerts_btn = self.create_sidebar_button(" Live Alerts", 'fa5s.bell')
+        self.geo_alerts_btn = self.create_sidebar_button(" Geo Alerts", 'fa5s.map-marked-alt')
         self.logs_btn = self.create_sidebar_button(" Logs", 'fa5s.history')
         self.viz_btn = self.create_sidebar_button(" Visualization", 'fa5s.chart-bar')
         self.model_mgr_btn = self.create_sidebar_button(" Model Manager", 'fa5s.brain')
         self.dashboard_btn.setChecked(True)
         self.nav_button_group = QButtonGroup()
         self.nav_button_group.setExclusive(True)
-        for btn in [self.dashboard_btn, self.live_alerts_btn, self.logs_btn, self.viz_btn, self.model_mgr_btn]:
+        for btn in [self.dashboard_btn, self.live_alerts_btn, self.geo_alerts_btn, self.logs_btn, self.viz_btn, self.model_mgr_btn]:
             self.nav_button_group.addButton(btn)
         self.start_button = QPushButton("Start Monitoring")
         self.stop_button = QPushButton("Stop Monitoring")
@@ -97,6 +103,7 @@ class MainWindow(QMainWindow):
         sidebar_layout.addSpacing(20)
         sidebar_layout.addWidget(self.dashboard_btn)
         sidebar_layout.addWidget(self.live_alerts_btn)
+        sidebar_layout.addWidget(self.geo_alerts_btn)
         sidebar_layout.addWidget(self.logs_btn)
         sidebar_layout.addWidget(self.viz_btn)
         sidebar_layout.addWidget(self.model_mgr_btn)
@@ -109,17 +116,20 @@ class MainWindow(QMainWindow):
         self.main_content = QStackedWidget()
         self.dashboard_page = QWidget()
         self.live_alerts_page = QWidget()
+        self.geo_alerts_page = QWidget()
         self.logs_page = QWidget()
         self.viz_page = QWidget()
         self.model_page = QWidget()
         self.main_content.addWidget(self.dashboard_page)
         self.main_content.addWidget(self.live_alerts_page)
+        self.main_content.addWidget(self.geo_alerts_page)
         self.main_content.addWidget(self.logs_page)
         self.main_content.addWidget(self.viz_page)
         self.main_content.addWidget(self.model_page)
         
         self.setup_dashboard_page()
         self.setup_live_alerts_page()
+        self.setup_geo_alerts_page()
         self.setup_logs_page()
         self.setup_viz_page()
         self.setup_model_page()
@@ -132,13 +142,37 @@ class MainWindow(QMainWindow):
         # Button connections
         self.dashboard_btn.clicked.connect(lambda: self.main_content.setCurrentIndex(0))
         self.live_alerts_btn.clicked.connect(lambda: self.main_content.setCurrentIndex(1))
-        self.logs_btn.clicked.connect(lambda: self.main_content.setCurrentIndex(2))
-        self.viz_btn.clicked.connect(lambda: self.main_content.setCurrentIndex(3))
-        self.model_mgr_btn.clicked.connect(lambda: self.main_content.setCurrentIndex(4))
+        self.geo_alerts_btn.clicked.connect(lambda: self.main_content.setCurrentIndex(2))
+        self.logs_btn.clicked.connect(lambda: self.main_content.setCurrentIndex(3))
+        self.viz_btn.clicked.connect(lambda: self.main_content.setCurrentIndex(4))
+        self.model_mgr_btn.clicked.connect(lambda: self.main_content.setCurrentIndex(5))
         self.start_button.clicked.connect(self.start_monitoring)
         self.stop_button.clicked.connect(self.stop_monitoring)
         self.clear_logs_button.clicked.connect(self.clear_logs)
         self.status_icon_label.setPixmap(qta.icon('fa5s.times-circle', color='#e74c3c').pixmap(QSize(24, 24)))
+
+    def setup_geo_alerts_page(self):
+        layout = QVBoxLayout(self.geo_alerts_page)
+        heading = QLabel("Geographic Threat Map")
+        heading.setObjectName("heading")
+        heading.setAlignment(Qt.AlignCenter)
+        
+        self.web_view = QWebEngineView()
+        self.update_geo_map() # Create initial empty map
+        
+        # Add a stretch to push everything down from the top
+        layout.addStretch(1)
+
+        # Add the heading and the map
+        layout.addWidget(heading)
+        layout.addWidget(self.web_view)
+        
+        # Add another stretch to push everything up from the bottom
+        layout.addStretch(1)
+
+        # Set the stretch factor of the web view to be large
+        # so it takes up most of the space between the stretches
+        layout.setStretchFactor(self.web_view, 8)
 
     def create_title_bar(self):
         title_bar = QWidget()
@@ -317,6 +351,9 @@ class MainWindow(QMainWindow):
             self.packet_count = 0
             self.attack_count = 0
             self.dashboard_traffic_data = []
+            self.attack_locations = []
+            self.update_geo_map()
+            
             self.sniffer_thread.start()
             self.status_icon_label.setPixmap(qta.icon('fa5s.check-circle', color='green').pixmap(QSize(24, 24)))
             self.start_button.setEnabled(False)
@@ -354,7 +391,36 @@ class MainWindow(QMainWindow):
                 self.add_alert_to_ui(log_features)
                 self.db_manager.log_alert(log_features)
                 self.update_dashboard_tables()
+                
+                source_ip = log_features.get('src_ip')
+                if source_ip:
+                    location_data = self.geoip_manager.get_location(source_ip)
+                    if location_data:
+                        self.attack_locations.append(location_data)
+                        self.update_geo_map()
+                        
         self.update_dashboard_stats()
+
+    def update_geo_map(self):
+        m = folium.Map(location=[20, 0], zoom_start=2, tiles="CartoDB dark_matter")
+
+        for lat, lon, city, country in self.attack_locations:
+            popup_text = f"{city}, {country}" if city else country
+            folium.CircleMarker(
+                location=[lat, lon],
+                radius=5,
+                popup=popup_text,
+                color="#e74c3c",
+                fill=True,
+                fill_color="#e74c3c",
+                fill_opacity=0.7
+            ).add_to(m)
+        
+        map_path = os.path.join(os.getcwd(), "map.html")
+        m.save(map_path)
+        
+        # Load the HTML file into the web view
+        self.web_view.setUrl(QUrl.fromLocalFile(map_path))
 
     def update_dashboard_stats(self):
         self.packets_label.setText(str(self.packet_count))
