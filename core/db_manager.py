@@ -25,19 +25,18 @@ class DBManager:
 
     def log_alert(self, alert_data):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        alert_type = "ERROR" if alert_data.get('severity') == 'High' else 'INFO'
         self.cursor.execute('''
             INSERT INTO alerts (timestamp, type, src_ip, dst_ip, src_port, dst_port, protocol, description)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             timestamp,
-            alert_type,
+            alert_data.get('severity', 'High'),
             alert_data.get('src_ip', 'N/A'),
             alert_data.get('dst_ip', 'N/A'),
             alert_data.get('src_port', 0),
             alert_data.get('dst_port', 0),
             alert_data.get('protocol', 0),
-            alert_data.get('description', 'Anomalous network packet detected.')
+            alert_data.get('description', 'General Anomaly')
         ))
         self.conn.commit()
 

@@ -19,6 +19,7 @@ from core.detection_engine import DetectionEngine
 from core.db_manager import DBManager
 from core.workers import CaptureWorker, TrainerWorker
 from core.geoip_manager import GeoIPManager
+from core.rule_analyzer import analyze_anomaly
 
 
 class MainWindow(QMainWindow):
@@ -158,20 +159,15 @@ class MainWindow(QMainWindow):
         heading.setAlignment(Qt.AlignCenter)
         
         self.web_view = QWebEngineView()
-        self.update_geo_map() # Create initial empty map
+        self.update_geo_map()
         
-        # Add a stretch to push everything down from the top
         layout.addStretch(1)
 
-        # Add the heading and the map
         layout.addWidget(heading)
         layout.addWidget(self.web_view)
         
-        # Add another stretch to push everything up from the bottom
         layout.addStretch(1)
 
-        # Set the stretch factor of the web view to be large
-        # so it takes up most of the space between the stretches
         layout.setStretchFactor(self.web_view, 8)
 
     def create_title_bar(self):
@@ -352,6 +348,7 @@ class MainWindow(QMainWindow):
             self.attack_count = 0
             self.dashboard_traffic_data = []
             self.attack_locations = []
+            self.dashboard_alerts_table.setRowCount(0)
             self.update_geo_map()
             
             self.sniffer_thread.start()
@@ -383,22 +380,27 @@ class MainWindow(QMainWindow):
         
         numerical_features, log_features = extract_features(packet)
         if numerical_features:
+            log_features['pkt_len'] = len(packet) 
             is_anomaly = self.detection_engine.predict(numerical_features)
+            
             if is_anomaly:
                 self.attack_count += 1
-                log_features['description'] = "Anomalous packet structure detected."
-                log_features['severity'] = "High"
+                attack_type, threat_level = analyze_anomaly(log_features)
+                log_features['description'] = attack_type
+                log_features['severity'] = threat_level
+                
                 self.add_alert_to_ui(log_features)
                 self.db_manager.log_alert(log_features)
+
                 self.update_dashboard_tables()
-                
+
                 source_ip = log_features.get('src_ip')
                 if source_ip:
                     location_data = self.geoip_manager.get_location(source_ip)
                     if location_data:
                         self.attack_locations.append(location_data)
                         self.update_geo_map()
-                        
+        
         self.update_dashboard_stats()
 
     def update_geo_map(self):
@@ -419,7 +421,6 @@ class MainWindow(QMainWindow):
         map_path = os.path.join(os.getcwd(), "map.html")
         m.save(map_path)
         
-        # Load the HTML file into the web view
         self.web_view.setUrl(QUrl.fromLocalFile(map_path))
 
     def update_dashboard_stats(self):
@@ -427,28 +428,18 @@ class MainWindow(QMainWindow):
         self.attacks_label.setText(str(self.attack_count))
 
     def update_dashboard_tables(self):
-        self.dashboard_alerts_table.setRowCount(0)
-        alerts = self.db_manager.get_all_logs(limit=5)
-        attack_count = 0
-        for data in alerts:
-            if data[2] == "ERROR" and attack_count < 5:
-                self.dashboard_alerts_table.insertRow(attack_count)
-                self.dashboard_alerts_table.setItem(attack_count, 0, QTableWidgetItem(data[1].split(" ")[1]))
-                self.dashboard_alerts_table.setItem(attack_count, 1, QTableWidgetItem(data[3]))
-                pred_item = QTableWidgetItem("Attack")
-                pred_item.setForeground(QColor("#e74c3c"))
-                self.dashboard_alerts_table.setItem(attack_count, 2, pred_item)
-                attack_count += 1
-
         self.dashboard_logs_table.setRowCount(0)
         logs = self.db_manager.get_all_logs(limit=5)
         for row, data in enumerate(logs):
             self.dashboard_logs_table.insertRow(row)
             self.dashboard_logs_table.setItem(row, 0, QTableWidgetItem(data[1]))
-            type_item = QTableWidgetItem(data[2])
-            if data[2] == "ERROR":
-                type_item.setForeground(QColor("#e74c3c"))
+            
+            threat_level = data[2]
+            type_item = QTableWidgetItem(threat_level)
+            if threat_level == "High": type_item.setForeground(QColor("#e74c3c"))
+            elif threat_level == "Medium": type_item.setForeground(QColor("#f39c12"))
             self.dashboard_logs_table.setItem(row, 1, type_item)
+            
             self.dashboard_logs_table.setItem(row, 2, QTableWidgetItem(data[8]))
 
     def update_charts(self):
@@ -497,35 +488,56 @@ class MainWindow(QMainWindow):
     def add_alert_to_ui(self, log_features):
         self.alerts_table.insertRow(0)
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+        threat_level = log_features.get('severity', 'High')
+        threat_item = QTableWidgetItem(threat_level)
+        if threat_level == "High": threat_item.setForeground(QColor("#e74c3c"))
+        elif threat_level == "Medium": threat_item.setForeground(QColor("#f39c12"))
+        elif threat_level == "Low": threat_item.setForeground(QColor("#f1c40f"))
+        threat_item.setFont(QFont("Segoe UI", 10, QFont.Bold))
+
         time_item = QTableWidgetItem(timestamp)
         src_ip_item = QTableWidgetItem(log_features.get('src_ip', 'N/A'))
         dst_ip_item = QTableWidgetItem(log_features.get('dst_ip', 'N/A'))
         proto_map = {6: "TCP", 17: "UDP", 1: "ICMP"}
         proto_item = QTableWidgetItem(proto_map.get(log_features.get('protocol'), 'Other'))
-        pred_item = QTableWidgetItem("Attack")
-        pred_item.setForeground(QColor("#e74c3c"))
-        pred_item.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        
         self.alerts_table.setItem(0, 0, time_item)
         self.alerts_table.setItem(0, 1, src_ip_item)
         self.alerts_table.setItem(0, 2, dst_ip_item)
         self.alerts_table.setItem(0, 3, proto_item)
-        self.alerts_table.setItem(0, 4, pred_item)
+        self.alerts_table.setItem(0, 4, threat_item)
+        
+        self.dashboard_alerts_table.insertRow(0)
+        self.dashboard_alerts_table.setItem(0, 0, time_item.clone())
+        self.dashboard_alerts_table.setItem(0, 1, src_ip_item.clone())
+        self.dashboard_alerts_table.setItem(0, 2, threat_item.clone())
+
+        if self.dashboard_alerts_table.rowCount() > 5:
+            self.dashboard_alerts_table.removeRow(5)
     
     def populate_logs_table(self):
         self.logs_table.setRowCount(0)
         logs = self.db_manager.get_all_logs()
         for row, data in enumerate(logs):
             self.logs_table.insertRow(row)
-            self.logs_table.setItem(row, 0, QTableWidgetItem(str(data[0])))
-            self.logs_table.setItem(row, 1, QTableWidgetItem(data[1]))
-            log_type = data[2]
-            type_item = QTableWidgetItem(log_type)
-            if log_type == "ERROR":
+            log_id = str(data[0])
+            timestamp = data[1]
+            threat_level = data[2]
+            attack_type = data[8]
+            
+            self.logs_table.setItem(row, 0, QTableWidgetItem(log_id))
+            self.logs_table.setItem(row, 1, QTableWidgetItem(timestamp))
+            
+            type_item = QTableWidgetItem(attack_type)
+            if threat_level == "High":
                 type_item.setForeground(QColor("#e74c3c"))
-                type_item.setFont(QFont("Segoe UI", 10, QFont.Bold))
+            elif threat_level == "Medium":
+                type_item.setForeground(QColor("#f39c12"))
             self.logs_table.setItem(row, 2, type_item)
-            message = f"{data[8]} from {data[3]}:{data[5]} to {data[4]}:{data[6]}"
+            
+            message = f"From {data[3]}:{data[5]} to {data[4]}:{data[6]}"
             self.logs_table.setItem(row, 3, QTableWidgetItem(message))
+
         self.update_dashboard_tables()
     
     def log_model_status(self, message): self.model_status_log.append(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {message}")
