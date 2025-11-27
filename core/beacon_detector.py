@@ -4,7 +4,6 @@ import pandas as pd
 import joblib
 from collections import defaultdict, deque
 
-# This will store a deque of (timestamp, packet_size) for each flow
 FLOW_MEMORY_SECONDS = 120
 MIN_PACKETS_FOR_ANALYSIS = 10
 

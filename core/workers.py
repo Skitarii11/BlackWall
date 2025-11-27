@@ -100,7 +100,7 @@ class TrainerWorker(QThread):
             self.progress.emit("Extracting statistical features from flows...")
             flow_features_list = []
             for _, flow_data in flows.items():
-                if len(flow_data['timestamps']) >= 5: # Min packets for training a flow
+                if len(flow_data['timestamps']) >= 5:
                     timestamps = np.array(sorted(flow_data['timestamps']))
                     sizes = np.array(flow_data['sizes'])
                     inter_arrival_times = np.diff(timestamps)
