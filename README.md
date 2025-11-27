@@ -25,9 +25,9 @@ A modern, desktop-based Intrusion Detection System (IDS) that leverages Machine 
 
 ## What is Blackwall?
 
-Blackwall acts as a vigilant security guard for your network. It continuously monitors network traffic, and unlike traditional signature-based systems that only catch known threats, Blackwall uses an **anomaly-based detection engine**.
+Blackwall acts as a vigilant security guard for your network. It continuously monitors network traffic, and unlike traditional signature-based systems that only catch known threats, Blackwall uses an **anomaly-based and signature-based detection engine**.
 
-By first learning what your "normal" network traffic looks like, it can identify any activity that deviates from this baseline. This allows Blackwall to detect not only known attacks but also novel threats like **Zero-Day exploits** and sophisticated campaigns such as "Operation Triangulation."
+By first learning what your "normal" network traffic looks like, it can identify any activity that deviates from this baseline. This allows Blackwall to detect not only known attacks( Trojan and Worms ) but also novel threats like **Zero-Day exploits** and sophisticated campaigns such as "Operation Triangulation."
 
 ## Key Features
 
