@@ -20,6 +20,7 @@ from core.db_manager import DBManager
 from core.workers import CaptureWorker, TrainerWorker
 from core.geoip_manager import GeoIPManager
 from core.rule_analyzer import analyze_anomaly
+from core.beacon_detector import BeaconDetector
 
 
 class MainWindow(QMainWindow):
@@ -38,6 +39,7 @@ class MainWindow(QMainWindow):
         self.detection_engine = DetectionEngine('models/anomaly_detector.joblib')
         self.db_manager = DBManager()
         self.geoip_manager = GeoIPManager()
+        self.beacon_detector = BeaconDetector()
         self.sniffer_thread.packet_captured.connect(self.process_packet)
         
         # Data and timers
@@ -380,12 +382,13 @@ class MainWindow(QMainWindow):
         
         numerical_features, log_features = extract_features(packet)
         if numerical_features:
-            log_features['pkt_len'] = len(packet) 
+            log_features['pkt_len'] = len(packet)
+            is_beacon = self.beacon_detector.process_packet(log_features)
             is_anomaly = self.detection_engine.predict(numerical_features)
             
-            if is_anomaly:
+            if is_anomaly or is_beacon:
                 self.attack_count += 1
-                attack_type, threat_level = analyze_anomaly(log_features)
+                attack_type, threat_level = analyze_anomaly(log_features, is_beacon_ml=is_beacon)
                 log_features['description'] = attack_type
                 log_features['severity'] = threat_level
                 
@@ -566,11 +569,14 @@ class MainWindow(QMainWindow):
         self.trainer_worker.finished.connect(self.on_training_finished)
         self.trainer_worker.start()
     
-    def on_training_finished(self, model_path):
-        if model_path:
-            self.log_model_status("Reloading detection engine with new model...")
-            self.detection_engine = DetectionEngine(model_path)
-            self.log_model_status("Engine reloaded.")
+    def on_training_finished(self):
+        self.log_model_status("Reloading all detection engines with new models...")
+        
+        self.detection_engine = DetectionEngine('models/anomaly_detector.joblib')
+        self.beacon_detector = BeaconDetector('models/beacon_detector.joblib')
+        
+        self.log_model_status("All engines reloaded. Blackwall is now using the new models.")
+        
         self.train_button.setEnabled(True)
         self.capture_button.setEnabled(True)
 

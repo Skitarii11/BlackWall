@@ -29,12 +29,15 @@ WORM_TARGET_PORTS = {
 }
 
 
-def analyze_anomaly(packet_features):
+def analyze_anomaly(packet_features, is_beacon_ml=False):
     src_ip = packet_features.get('src_ip')
     dst_ip = packet_features.get('dst_ip')
     dst_port = packet_features.get('dst_port')
     pkt_len = packet_features.get('pkt_len')
 
+    if is_beacon_ml:
+        return ("C2 Beaconing Detected (ML)", "Critical")
+    
     # --- Layer 1: Signature-Based Detection ---
 
     # Rule 1: Trojan Port Signature
