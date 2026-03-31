@@ -1,11 +1,95 @@
+import queue
 import pandas as pd
 import joblib
 import numpy as np
+import time
 from scapy.all import sniff, wrpcap, rdpcap
 from sklearn.ensemble import IsolationForest
 from PyQt5.QtCore import QThread, pyqtSignal
 from collections import defaultdict
 from core.feature_extractor import extract_features
+from core.rule_analyzer import analyze_anomaly
+
+class SnifferThread(QThread):
+    def __init__(self, packet_queue, interface=None):
+        super().__init__()
+        self.packet_queue = packet_queue
+        self.interface = interface
+        self.running = False
+
+    def run(self):
+        self.running = True
+        sniff(iface=self.interface, prn=self.packet_queue.put, stop_filter=lambda p: not self.running)
+
+    def stop(self):
+        self.running = False
+
+class ProcessingWorker(QThread):
+    update_ui = pyqtSignal(dict, list)
+    stats_updated = pyqtSignal(dict)
+
+    def __init__(self, packet_queue, detection_engine, beacon_detector, geoip_manager, db_manager):
+        super().__init__()
+        self.packet_queue = packet_queue
+        self.detection_engine = detection_engine
+        self.beacon_detector = beacon_detector
+        self.geoip_manager = geoip_manager
+        self.db_manager = db_manager
+        self.running = False
+
+    def run(self):
+        self.running = True
+        packet_count = 0
+        attack_count = 0
+        protocol_counter = defaultdict(int)
+        last_stats_update = time.time()
+        while self.running:
+            try:
+                packet = self.packet_queue.get(timeout=1)
+                if packet is None: continue
+                packet_count += 1
+                proto_map = {1: 'ICMP', 6: 'TCP', 17: 'UDP'}
+                if packet.haslayer("IP"):
+                    protocol_num = packet["IP"].proto
+                    if protocol_num in proto_map:
+                        protocol_counter[proto_map[protocol_num]] += 1
+                numerical_features, log_features = extract_features(packet)
+                if numerical_features:
+                    log_features['pkt_len'] = len(packet)
+                    is_beacon = self.beacon_detector.process_packet(log_features)
+                    is_anomaly = self.detection_engine.predict(numerical_features)
+                    if is_anomaly or is_beacon:
+                        attack_count += 1
+                        attack_type, threat_level = analyze_anomaly(log_features, is_beacon_ml=is_beacon)
+                        log_features['description'] = attack_type
+                        log_features['severity'] = threat_level
+                        source_ip = log_features.get('src_ip')
+                        if source_ip:
+                            location_data = self.geoip_manager.get_location(source_ip)
+                            if location_data:
+                                log_features['location'] = location_data
+                        self.db_manager.log_alert(log_features)
+                        recent_logs = self.db_manager.get_all_logs(limit=5)
+                        self.update_ui.emit(log_features, recent_logs)
+                current_time = time.time()
+                if current_time - last_stats_update > 1:
+                    stats = {
+                        'packet_count': packet_count, 'attack_count': attack_count,
+                        'protocols': dict(protocol_counter)
+                    }
+                    self.stats_updated.emit(stats)
+                    packet_count = 0
+                    attack_count = 0
+                    protocol_counter.clear()
+                    last_stats_update = current_time
+            except queue.Empty:
+                continue
+            except Exception as e:
+                print(f"Error in processing worker: {e}")
+
+    def stop(self):
+        self.running = False
+        self.packet_queue.put(None)
 
 class CaptureWorker(QThread):
     finished = pyqtSignal(str)
@@ -23,7 +107,6 @@ class CaptureWorker(QThread):
         self.progress.emit(f"Starting traffic capture for {self.duration_sec} seconds...")
         self.progress.emit("Please perform your normal network activities now.")
         
-        # Sniff packets
         packets = sniff(count=self.packet_count, timeout=self.duration_sec, stop_filter=lambda p: not self.running)
         
         if not self.running:
@@ -31,7 +114,6 @@ class CaptureWorker(QThread):
             self.finished.emit("")
             return
 
-        # Save the captured packets
         wrpcap(self.output_file, packets, append=True)
         
         self.progress.emit(f"Capture complete! {len(packets)} packets have been ADDED to '{self.output_file}'.")

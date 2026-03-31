@@ -1,6 +1,7 @@
 import os
 import datetime
 import numpy as np
+import queue
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                              QLabel, QTableWidget, QTableWidgetItem, QStackedWidget,
                              QTextEdit, QHeaderView, QButtonGroup, QMessageBox)
@@ -17,7 +18,7 @@ from core.sniffer import SnifferThread
 from core.feature_extractor import extract_features
 from core.detection_engine import DetectionEngine
 from core.db_manager import DBManager
-from core.workers import CaptureWorker, TrainerWorker
+from core.workers import SnifferThread, ProcessingWorker, CaptureWorker, TrainerWorker
 from core.geoip_manager import GeoIPManager
 from core.rule_analyzer import analyze_anomaly
 from core.beacon_detector import BeaconDetector
@@ -32,34 +33,71 @@ class MainWindow(QMainWindow):
 
         self.setWindowIcon(QIcon('assets/icon.png'))
         self.setWindowTitle("Blackwall IDS")
-        self.setGeometry(100, 100, 1400, 900)
+        self.setGeometry(100, 100, 1200, 600)
+        
+        self.packet_queue = queue.Queue()
         
         # Backend components
-        self.sniffer_thread = SnifferThread()
         self.detection_engine = DetectionEngine('models/anomaly_detector.joblib')
+        self.beacon_detector = BeaconDetector('models/beacon_detector.joblib')
         self.db_manager = DBManager()
         self.geoip_manager = GeoIPManager()
-        self.beacon_detector = BeaconDetector()
-        self.sniffer_thread.packet_captured.connect(self.process_packet)
+        
+        # Worker Threads
+        self.sniffer_thread = SnifferThread(self.packet_queue)
+        self.processing_worker = ProcessingWorker(
+            self.packet_queue, self.detection_engine, self.beacon_detector,
+            self.geoip_manager, self.db_manager
+        )
+        
+        # Connect signals from the processing worker to UI slots
+        self.processing_worker.update_ui.connect(self.handle_ui_update)
+        self.processing_worker.stats_updated.connect(self.handle_stats_update)
         
         # Data and timers
-        self.protocol_counter = Counter()
-        self.viz_update_timer = QTimer()
-        self.viz_update_timer.setInterval(1000)
-        self.viz_update_timer.timeout.connect(self.update_charts)
-        
-        self.packet_count = 0
-        self.attack_count = 0
+        self.total_packets = 0
+        self.total_attacks = 0
         self.dashboard_traffic_data = []
         self.attack_locations = []
+        self.protocol_counter_display = {}
 
         self.init_ui()
         self.update_charts()
-
         self._drag_pos = QPoint()
+        
+    @pyqtSlot(dict, list)
+    def handle_ui_update(self, new_alert, recent_logs):
+        self.add_alert_to_ui(new_alert)
+        
+        self.dashboard_logs_table.setRowCount(0)
+        for row, data in enumerate(recent_logs):
+            self.dashboard_logs_table.insertRow(row)
+            self.dashboard_logs_table.setItem(row, 0, QTableWidgetItem(data[1]))
+            threat_level = data[2]
+            type_item = QTableWidgetItem(threat_level)
+            if threat_level == "High" or threat_level == "Critical": type_item.setForeground(QColor("#e74c3c"))
+            elif threat_level == "Medium": type_item.setForeground(QColor("#f39c12"))
+            self.dashboard_logs_table.setItem(row, 1, type_item)
+            self.dashboard_logs_table.setItem(row, 2, QTableWidgetItem(data[8]))
+        
+        location_data = new_alert.get('location')
+        if location_data:
+            self.attack_locations.append(location_data)
+            self.update_geo_map()
+                
+    @pyqtSlot(dict)
+    def handle_stats_update(self, stats):
+        self.total_packets += stats['packet_count']
+        self.total_attacks += stats['attack_count']
+        self.packets_label.setText(str(self.total_packets))
+        self.attacks_label.setText(str(self.total_attacks))
+        self.protocol_counter_display = stats['protocols']
+        self.dashboard_traffic_data.append(sum(stats['protocols'].values()))
+        if len(self.dashboard_traffic_data) > 30:
+            self.dashboard_traffic_data.pop(0)
+        self.update_charts()
 
     def init_ui(self):
-        # Create a central container widget with a black border
         self.container = QWidget()
         self.container.setObjectName("container")
         self.container.setStyleSheet("#container { background-color: #161625; border: 1px solid #000000; }")
@@ -346,65 +384,34 @@ class MainWindow(QMainWindow):
 
     def start_monitoring(self):
         if not self.sniffer_thread.isRunning():
-            self.packet_count = 0
-            self.attack_count = 0
+            self.total_packets = 0
+            self.total_attacks = 0
             self.dashboard_traffic_data = []
             self.attack_locations = []
             self.dashboard_alerts_table.setRowCount(0)
             self.update_geo_map()
             
+            self.processing_worker.start()
             self.sniffer_thread.start()
+            
             self.status_icon_label.setPixmap(qta.icon('fa5s.check-circle', color='green').pixmap(QSize(24, 24)))
             self.start_button.setEnabled(False)
             self.stop_button.setEnabled(True)
-            self.protocol_counter.clear()
-            self.viz_update_timer.start()
             print("Monitoring started.")
 
     def stop_monitoring(self):
         if self.sniffer_thread.isRunning():
             self.sniffer_thread.stop()
+            self.processing_worker.stop()
             self.sniffer_thread.wait()
+            self.processing_worker.wait()
+            
             self.status_icon_label.setPixmap(qta.icon('fa5s.times-circle', color='#e74c3c').pixmap(QSize(24, 24)))
             self.start_button.setEnabled(True)
             self.stop_button.setEnabled(False)
-            self.viz_update_timer.stop()
             print("Monitoring stopped.")
 
-    @pyqtSlot(object)
-    def process_packet(self, packet):
-        self.packet_count += 1
-        proto_map = {1: 'ICMP', 6: 'TCP', 17: 'UDP'}
-        if packet.haslayer("IP"):
-            protocol_num = packet["IP"].proto
-            if protocol_num in proto_map:
-                self.protocol_counter[proto_map[protocol_num]] += 1
-        
-        numerical_features, log_features = extract_features(packet)
-        if numerical_features:
-            log_features['pkt_len'] = len(packet)
-            is_beacon = self.beacon_detector.process_packet(log_features)
-            is_anomaly = self.detection_engine.predict(numerical_features)
-            
-            if is_anomaly or is_beacon:
-                self.attack_count += 1
-                attack_type, threat_level = analyze_anomaly(log_features, is_beacon_ml=is_beacon)
-                log_features['description'] = attack_type
-                log_features['severity'] = threat_level
-                
-                self.add_alert_to_ui(log_features)
-                self.db_manager.log_alert(log_features)
-
-                self.update_dashboard_tables()
-
-                source_ip = log_features.get('src_ip')
-                if source_ip:
-                    location_data = self.geoip_manager.get_location(source_ip)
-                    if location_data:
-                        self.attack_locations.append(location_data)
-                        self.update_geo_map()
-        
-        self.update_dashboard_stats()
+    
 
     def update_geo_map(self):
         m = folium.Map(location=[20, 0], zoom_start=2, tiles="CartoDB dark_matter")
@@ -447,19 +454,14 @@ class MainWindow(QMainWindow):
 
     def update_charts(self):
         self.update_protocol_chart()
-        current_total = sum(self.protocol_counter.values())
-        self.dashboard_traffic_data.append(current_total)
-        if len(self.dashboard_traffic_data) > 30:
-            self.dashboard_traffic_data.pop(0)
         self.update_line_chart(self.dashboard_chart, self.dashboard_traffic_data, "Live Traffic")
-        self.protocol_counter.clear()
 
     def update_protocol_chart(self):
         ax = self.protocol_chart.axes
         ax.clear()
         protocols = ['TCP', 'UDP', 'ICMP']
         colors = ['#3498db', '#2ecc71', '#f1c40f']
-        counts = [self.protocol_counter.get(p, 0) for p in protocols]
+        counts = [self.protocol_counter_display.get(p, 0) for p in protocols]
         ax.bar(protocols, counts, color=colors)
         ax.set_title("Live Network Protocol Distribution", color='#dcdcdc')
         ax.set_ylabel("Packet Count / sec", color='#dcdcdc')

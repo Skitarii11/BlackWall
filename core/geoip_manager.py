@@ -25,5 +25,4 @@ class GeoIPManager:
             )
             return location
         except (geoip2.errors.AddressNotFoundError, ValueError):
-            # Address not in DB or invalid IP format
             return None
