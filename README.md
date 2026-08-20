@@ -19,9 +19,6 @@ A modern, desktop-based Intrusion Detection System (IDS) that leverages Machine 
 - [Tech Stack](#tech-stack)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Project Structure](#project-structure)
-- [License](#license)
-- [Authors](#authors)
 
 ## What is Blackwall?
 
